@@ -411,6 +411,7 @@ def compressedLoad(filename):
 def MapReduce(reduceFunc, mapFunc, data,
 		mapTransfer=None,
 		reduceTransfer=None,
+        parallelMap = False
 	):
 	'''
 	Args:
@@ -430,9 +431,13 @@ def MapReduce(reduceFunc, mapFunc, data,
 	Returns:
 	    dict: result
 	'''
+	if parallelMap:
+		mmap = parallel_map
+	else:
+		mmap = map
 	if mapTransfer is not None:
 		data = map(mapTransfer, data)
-	mapResult = map(mapFunc, data)
+	mapResult = mmap(mapFunc, data)
 	result = {}
 	for key, value in mapResult:
 		if reduceTransfer is not None:
@@ -442,5 +447,3 @@ def MapReduce(reduceFunc, mapFunc, data,
 		else:
 			result[key] = value
 	return result
-
-
