@@ -447,3 +447,38 @@ def MapReduce(reduceFunc, mapFunc, data,
 		else:
 			result[key] = value
 	return result
+
+
+class CachedProperty(object):
+	"""
+	Example of Usage:
+		class Foo(object):
+	    def __init__(self):
+	        print('fuck init')
+
+
+	    @CachedProperty
+	    def bar(self):
+	        print('asdfhas')
+	        return "fjhgfjgfj"
+
+		foo = Foo()
+		print("initiate ... ")
+		# print(foo.bar)
+		# print(foo.bar)	
+	"""
+    def __init__(self, func, name=None):
+        print('call init')
+        self.func = func
+        self.name = name if name is not None else func.__name__
+        self.__doc__ = func.__doc__
+
+    def __get__(self, instance, class_):
+        print('call get')
+        if instance is None:
+            return self
+        res = self.func(instance)
+        setattr(instance, self.name, res)
+        return res
+
+
