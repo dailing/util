@@ -55,17 +55,17 @@ class ProcessPool(object):
 			result_queue: multiprocessing.Queue,
 			semaphore: multiprocessing.Semaphore):
 		"""
-        :param worker_id: The id of this worker, 1~n
-        :param func:
-        :param task_queue: pull tasks from this task queue
-        :param result_queue:
-        :param semaphore: signal this if worker are free
-        :return: None
-        This pool are designed so that the main process
-        will block if all workers are working. So this
-        guarantees that not too many tasks are pushed into
-        the task_queue, which sometimes can cause problem.
-        """
+		:param worker_id: The id of this worker, 1~n
+		:param func:
+		:param task_queue: pull tasks from this task queue
+		:param result_queue:
+		:param semaphore: signal this if worker are free
+		:return: None
+		This pool are designed so that the main process
+		will block if all workers are working. So this
+		guarantees that not too many tasks are pushed into
+		the task_queue, which sometimes can cause problem.
+		"""
 		logger.debug(f'started worker: {worker_id}')
 		try:
 			func.init_env()
@@ -96,9 +96,9 @@ class ProcessPool(object):
 
 	def start(self):
 		"""
-        start the process
-        :return:
-        """
+		start the process
+		:return:
+		"""
 		if self.process_pool is None:
 			self.process_pool = []
 			for i in range(self.num_thread):
@@ -116,12 +116,12 @@ class ProcessPool(object):
 
 	def _get_result(self, task_id):
 		"""
-        retrieve the result of a task
-        if the result is not available, stall
-        if the result already ready, return it
-        :param task_id:
-        :return: result
-        """
+		retrieve the result of a task
+		if the result is not available, stall
+		if the result already ready, return it
+		:param task_id:
+		:return: result
+		"""
 		try:
 			result = self.result_map.pop(task_id)
 			if type(result) is Exception:
@@ -165,16 +165,16 @@ def parallel_map(
 		pool_size=50,
 		num_thread=None) -> Iterable:
 	"""
-    maps a iterable to another parallel.
-    :param func: map function
-    :param iter_obj: input
-    :param pool_size: size of the result pool, since some item are run
-                      parallel, some item can finish earlier then
-                      others, with a pool, the early result can be put
-                      in the pool and run the next. so that we can max
-                      cpu usage without waiting the slower tasks.
-    :return: output of the function on each item in the input
-    """
+	maps a iterable to another parallel.
+	:param func: map function
+	:param iter_obj: input
+	:param pool_size: size of the result pool, since some item are run
+					  parallel, some item can finish earlier then
+					  others, with a pool, the early result can be put
+					  in the pool and run the next. so that we can max
+					  cpu usage without waiting the slower tasks.
+	:return: output of the function on each item in the input
+	"""
 	tasks = ProcessPool(func, num_thread=num_thread)
 	tasks.start()
 	pool = []
@@ -214,11 +214,11 @@ def list_to_map_of_list(key_func: Callable, l: Iterable) -> dict:
 
 def run_once(f):
 	"""
-    this is a decorator for functions.
-    the returned function will only run once.
-    :param f: the function
-    :return: the wrapper function that will only run once
-    """
+	this is a decorator for functions.
+	the returned function will only run once.
+	:param f: the function
+	:return: the wrapper function that will only run once
+	"""
 
 	def wrapper(*args, **kwargs):
 		if not wrapper.has_run:
@@ -244,11 +244,11 @@ def parallel_process(
 		func: Callable,
 		iter_obj: Iterable) -> None:
 	"""
-    process each input with func and ignore result
-    :param func: function to perform the process
-    :param iter_obj: input object
-    :return:
-    """
+	process each input with func and ignore result
+	:param func: function to perform the process
+	:param iter_obj: input object
+	:return:
+	"""
 	task = ProcessPool(func)
 	task.start()
 	for i in iter_obj:
@@ -348,7 +348,7 @@ class MongoFileWriter(MongoConnector, TaskFunc):
 		self.init_env()
 		if type(file_content) is not bytes:
 			logger.error('Input Type not correct!'
-			             f' Except byters, got {type(file_content)}')
+						 f' Except byters, got {type(file_content)}')
 			traceback.print_stack()
 		try:
 			logger.debug(f'saving {name}')
@@ -411,25 +411,25 @@ def compressedLoad(filename):
 def MapReduce(reduceFunc, mapFunc, data,
 		mapTransfer=None,
 		reduceTransfer=None,
-        parallelMap = False
+		parallelMap = False
 	):
 	'''
 	Args:
-	    reduceFunc (callable): reduce finction.
-	    	must recieve 2 parameters, and the order
-	    	of these parameters does not matter
-	    mapFunc (callable): map function, map the data
-	    	to a key, value pair, values in each key 
-	    	will be collected by reduce.
-	    data (any): Input Data to process
-	    mapTransfer(callable): called on original data,
-	    	if not none, each data will be transfered
-	    	using the mapTransfer.
-	    reduceTransfer(callable): if not None, the result
-	    	after map stage will be transfered using this
-	    	reduceTransfer.
+		reduceFunc (callable): reduce finction.
+			must recieve 2 parameters, and the order
+			of these parameters does not matter
+		mapFunc (callable): map function, map the data
+			to a key, value pair, values in each key 
+			will be collected by reduce.
+		data (any): Input Data to process
+		mapTransfer(callable): called on original data,
+			if not none, each data will be transfered
+			using the mapTransfer.
+		reduceTransfer(callable): if not None, the result
+			after map stage will be transfered using this
+			reduceTransfer.
 	Returns:
-	    dict: result
+		dict: result
 	'''
 	if parallelMap:
 		mmap = parallel_map
@@ -453,32 +453,30 @@ class CachedProperty(object):
 	"""
 	Example of Usage:
 		class Foo(object):
-	    def __init__(self):
-	        print('fuck init')
+		def __init__(self):
+			print('fuck init')
 
 
-	    @CachedProperty
-	    def bar(self):
-	        print('asdfhas')
-	        return "fjhgfjgfj"
+		@CachedProperty
+		def bar(self):
+			print('asdfhas')
+			return "fjhgfjgfj"
 
 		foo = Foo()
 		print("initiate ... ")
 		# print(foo.bar)
 		# print(foo.bar)	
 	"""
-    def __init__(self, func, name=None):
-        print('call init')
-        self.func = func
-        self.name = name if name is not None else func.__name__
-        self.__doc__ = func.__doc__
+	def __init__(self, func, name=None):
+		self.func = func
+		self.name = name if name is not None else func.__name__
+		self.__doc__ = func.__doc__
 
-    def __get__(self, instance, class_):
-        print('call get')
-        if instance is None:
-            return self
-        res = self.func(instance)
-        setattr(instance, self.name, res)
-        return res
+	def __get__(self, instance, class_):
+		if instance is None:
+			return self
+		res = self.func(instance)
+		setattr(instance, self.name, res)
+		return res
 
 
