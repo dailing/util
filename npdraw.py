@@ -10,8 +10,6 @@ def _fromnumpy(img):
     img = img[:, :, ::-1]
     img = np.dstack((img, np.zeros(img.shape[:2], dtype=np.uint8)))
     img = img.copy()
-    print(img.shape)
-    print(img.strides)
     surface = cairo.ImageSurface.create_for_data(
         img, cairo.FORMAT_ARGB32, img.shape[1], img.shape[0])
     return surface
@@ -30,7 +28,7 @@ def _tonumpy(surface: cairo.ImageSurface):
     return np_image
 
 
-def draw_bounding_box(img: np.ndarray, crow, ccol, rowrange, colrange):
+def draw_bounding_box(img: np.ndarray, crow, ccol, rowrange, colrange, color=None):
     H, W, C = img.shape
     surface = _fromnumpy(img)
     ctx = cairo.Context(surface)
@@ -42,12 +40,14 @@ def draw_bounding_box(img: np.ndarray, crow, ccol, rowrange, colrange):
         colrange / W,
         rowrange / H,
     )  # Rectangle(x0, y0, x1, y1)
-    ctx.set_source_rgba(0, 1, 0, 1)
-    ctx.set_line_width(1/H)
-    ctx.set_dash([5/H])
+    if color is None:
+        color = (0, 1, 0, 1)
+    ctx.set_source_rgba(*color)
+    ctx.set_line_width(1 / H)
+    ctx.set_dash([5 / H])
     ctx.stroke_preserve()
-    ctx.set_source_rgba(1,0,0,0.2)
-    ctx.fill()
+    ctx.set_source_rgba(1, 0, 0, 0.2)
+    # ctx.fill()
     return _tonumpy(surface)
 
 
