@@ -28,7 +28,8 @@ def _tonumpy(surface: cairo.ImageSurface):
     return np_image
 
 
-def draw_bounding_box(img: np.ndarray, crow, ccol, rowrange, colrange, color=None):
+def draw_bounding_box(img: np.ndarray, crow, ccol, rowrange,
+        colrange, color=None, bg_color=None):
     H, W, C = img.shape
     surface = _fromnumpy(img)
     ctx = cairo.Context(surface)
@@ -46,8 +47,9 @@ def draw_bounding_box(img: np.ndarray, crow, ccol, rowrange, colrange, color=Non
     ctx.set_line_width(1 / H)
     ctx.set_dash([5 / H])
     ctx.stroke_preserve()
-    ctx.set_source_rgba(1, 0, 0, 0.2)
-    # ctx.fill()
+    if bg_color is not None:
+        ctx.set_source_rgba(*bg_color)
+        ctx.fill()
     return _tonumpy(surface)
 
 
