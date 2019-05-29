@@ -35,17 +35,16 @@ def segmentation2bbox(image):
             for dr, dc in delta:
                 if 0 <= rr + dr < image.shape[0] and 0 <= cc + dc < image.shape[1]:
                     s_queue.append((rr + dr, cc + dc))
-
         bboxs.append(bbox)
     # transfer range to center and width
     bboxs = map(
         lambda x: (
             (x[0] + x[1]) // 2,
-            (x[1] - x[0]) // 2,
             (x[2] + x[3]) // 2,
-            (x[3] - x[2]) // 2),
+            (x[1] - x[0]),
+            (x[3] - x[2])),
         bboxs[1:])
-    bboxs = list(filter(lambda x:x[1]>0 and x[3] > 0, bboxs))
+    bboxs = list(filter(lambda x: x[1] > 0 and x[3] > 0, bboxs))
     return bboxs
 
 

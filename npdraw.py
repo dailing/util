@@ -28,10 +28,10 @@ def _tonumpy(surface: cairo.ImageSurface):
     return np_image
 
 
-def draw_bounding_box(img: np.ndarray, crow, ccol, rowrange,
-        colrange, color=None, bg_color=None):
-    H, W, C = img.shape
-    surface = _fromnumpy(img)
+def draw_bounding_box(image: np.ndarray, crow, ccol, rowrange,
+                      colrange, color=None, bg_color=None):
+    H, W, C = image.shape
+    surface = _fromnumpy(image)
     ctx = cairo.Context(surface)
     ctx.scale(W, H)
 
