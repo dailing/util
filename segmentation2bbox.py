@@ -48,6 +48,27 @@ def segmentation2bbox(image):
     return bboxs
 
 
+def slide_image(img, size, overlap=0.2):
+    image_patch = []
+    top_left_points = []
+    stride = (1 - overlap) * size
+
+    def calculate_start_p(stride, size):
+        num_step = math.ceil(size / stride)
+        stride = size / num_step
+        for i in range(num_step + 1):
+            yield math.floor(stride * i)
+
+    for row, col in product(
+            calculate_start_p(stride, img.shape[0] - size),
+            calculate_start_p(stride, img.shape[1] - size)):
+        row = min(img.shape[0] - size, row)
+        col = min(img.shape[1] - size, col)
+        image_patch.append(img[row:row + size, col:col + size, ::])
+        top_left_points.append((row, col))
+    return image_patch, top_left_points
+
+
 if __name__ == '__main__':
     rr = np.zeros((1000, 1000))
     rr[0:4, 1:1000] = 1
