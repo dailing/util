@@ -333,6 +333,15 @@ class ToNumpyType(Transform):
         return img.astype(self.typeClass)
 
 
+class GlobalNorm(Transform):
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+
+    def transform(self, img):
+        return (img - mean) / std
+
+
 class PerImageNorm(Transform):
     """docstring for PerImageNorm"""
 
