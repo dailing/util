@@ -108,10 +108,10 @@ class Response(object):
             self.raw = lzma.decompress(self.raw)
         return self.raw
 
-    def get_json(self):
-        obj = None
-        obj = json.loads(self.get_raw().decode('utf-8'))
-        return obj
+    # def get_json(self):
+    #     obj = None
+    #     obj = json.loads(self.get_raw().decode('utf-8'))
+    #     return obj
 
     def get(self):
         return pickle.loads(self.get_raw())
@@ -192,7 +192,8 @@ class MServiceInstance(ABC):
 
 class MService:
     def __init__(self, serviceName=None, service=None,
-                 inputTransform=None, outputTransform=None):
+                 inputTransform=None, outputTransform=None,
+                 redis_port=6379, redis_host='redis'):
         """
         constructor of MService
         :param serviceName: name of the service
@@ -200,6 +201,7 @@ class MService:
         :param inputTransform: dict, string key,
             value should be any callable object
         :param outputTransform: same as inputTransform
+        :param redis_port: redis port
         """
         if serviceName is None:
             serviceName = randstr(20)
@@ -217,6 +219,8 @@ class MService:
                 logger.error(f"transform object of service{serviceName},"
                              f"key{k} is not callable")
                 raise Exception("FUCK ME!")
+        self.redis_port = redis_port
+        self.redis_host = redis_host
 
     def run(self):
         # check service
@@ -232,7 +236,7 @@ class MService:
         except Exception as e:
             logger.error(e)
             traceback.print_tb(e.__traceback__)
-        task = Task(self.serviceName, 'redis', 6379)
+        task = Task(self.serviceName, self.redis_host, redis_port=self.redis_port)
         logger.info('task ready....')
         while True:
             result = None
@@ -250,7 +254,7 @@ class MService:
                 # write to the task slot anyway.
                 if resp_writer is not None:
                     try:
-                        resp_writer.write_raw(pickle.dumps(result))
+                        resp_writer.write_raw(lzma.compress(pickle.dumps(result)))
                     except Exception as e:
                         logger.error(e, exec_info=True)
 

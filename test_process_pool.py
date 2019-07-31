@@ -10,7 +10,7 @@ import hashlib
 logger = get_logger('fuck')
 
 
-class TestCach edFunc(unittest.TestCase):
+class TestCachedFunc(unittest.TestCase):
     def test_int_single_key(self):
         @CachedFunction(cache_dir='/tmp/test/cache')
         def sqrt(x):
@@ -23,7 +23,7 @@ class TestCach edFunc(unittest.TestCase):
 
     def test_cached_func_file_input(self):
         np.random.seed(5153424)
-        bytes_arr = [np.random.bytes(1024*325) for i in range(10000)]
+        bytes_arr = [np.random.bytes(1024*325) for i in range(100)]
         md5_arr = []
         for i in bytes_arr:
             md5 = hashlib.md5()
