@@ -263,7 +263,7 @@ class RangeLimit(Transform):
 class RandomNoise(Transform):
     """docstring for RandomNoise"""
 
-    def __init__(self, mean=0.2, var=0.04, amount=0.001, salt_vs_pepper=0.5):
+    def __init__(self, mean=0.1, var=0.02, amount=0.001, salt_vs_pepper=0.5):
         super().__init__()
         self.mean = mean
         self.var = var
