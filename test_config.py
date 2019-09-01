@@ -79,3 +79,62 @@ c:
     assert cfg.a == 100
     assert cfg.b == 101
     assert cfg.c.d == 102
+
+
+def test_add_multi():
+    cfg = Configure()
+    cfg.add_multi(
+        value1=dict(default_value=10),
+        value2=dict(default_value=20),
+    )
+    assert cfg.value1 == 10
+    assert cfg.value2 == 20
+
+
+def test_add_multi_no_dict():
+    cfg = Configure()
+    cfg.add_multi(
+        value1=10,
+        value2=20,
+    )
+    assert cfg.value1 == 10
+    assert cfg.value2 == 20
+
+
+def test_list_of_field():
+    cfg = Configure()
+    cfg.add_list('l1', lambda: ValueField())
+    cfg.l1.append(10)
+    cfg.l1.append(20)
+    assert cfg.l1[0] == 10
+    assert cfg.l1[1] == 20
+
+
+def test_random_add_to_list():
+    l = []
+    cfg = Configure()
+    cfg.add_list('l', lambda: ValueField())
+    for i in range(100):
+        num = randint(-10000, 10000)
+        l.append(num)
+        cfg.l.append(num)
+
+    for i, j in zip(cfg.l, l):
+        assert i == j
+
+
+def test_list_of_config():
+    cfg = Configure().add_list('l1', lambda: Configure().add_multi(
+        v1=dict(default_value=1),
+        v2=dict(default_value=2)
+    ))
+    cfg.l1.append(
+        dict(v1=10, v2=20)
+    )
+    cfg.l1.append(dict())
+    print(cfg.l1)
+    print(cfg.l1[0])
+    assert cfg.l1[0].v1 == 10
+    assert cfg.l1[0].v2 == 20
+    assert cfg.l1[1].v1 == 1
+    assert cfg.l1[1].v2 == 2

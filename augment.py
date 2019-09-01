@@ -198,24 +198,24 @@ class ResizeKeepAspectRatio(Transform):
 
     def _resize(self, img):
         ratio = self.size[0] / img.shape[0]
-        ratio = min(ratio, self.size[1] / img.shape[1])
+        ratio = max(ratio, self.size[1] / img.shape[1])
         if ratio == 1:
             return img
         target_size = (int(img.shape[0] * ratio), int(img.shape[1] * ratio))
-        img = cv2.resize(img, target_size)
-        if len(img.shape) == 3:
-            BLACK = [0, 0, 0]
-        else:
-            BLACK = 0
-        logger.debug(img.shape)
-        img = cv2.copyMakeBorder(
-            img,
-            (self.size[0] - img.shape[0]) // 2,
-            self.size[0] - (self.size[0] - img.shape[0]) // 2 - img.shape[0],
-            (self.size[1] - img.shape[1]) // 2,
-            self.size[1] - (self.size[1] - img.shape[1]) // 2 - img.shape[1],
-            cv2.BORDER_CONSTANT, value=BLACK
-        )
+        img = cv2.resize(img, target_size[::-1])
+        # if len(img.shape) == 3:
+        #     BLACK = [0, 0, 0]
+        # else:
+        #     BLACK = 0
+        # logger.debug(img.shape)
+        # img = cv2.copyMakeBorder(
+        #     img,
+        #     (self.size[0] - img.shape[0]) // 2,
+        #     self.size[0] - (self.size[0] - img.shape[0]) // 2 - img.shape[0],
+        #     (self.size[1] - img.shape[1]) // 2,
+        #     self.size[1] - (self.size[1] - img.shape[1]) // 2 - img.shape[1],
+        #     cv2.BORDER_CONSTANT, value=BLACK
+        # )
         return img
 
     def transform(self, *imgs):
@@ -236,7 +236,9 @@ class Resize(Transform):
             if len(img.shape) == 3:
                 result = np.zeros((self.size, self.size, img.shape[2]),
                                   img.dtype)
-                cv2.resize(img, result.shape[:2], result)
+                cv2.resize(
+                    img, result.shape[:2],
+                    result, interpolation=cv2.INTER_LINEAR)
             elif len(img.shape) == 2:
                 result = np.zeros((self.size, self.size), img.dtype)
                 cv2.resize(img, result.shape[:2], result)
@@ -289,6 +291,7 @@ class ToTensor(Transform):
     def transform(self, img):
         logger.debug(f'type is: {type(img)}, {img}')
         assert np.issubdtype(img.dtype, np.floating)
+        # logger.info(img.shape)
         return img.transpose((2, 0, 1))
 
 

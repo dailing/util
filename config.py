@@ -8,6 +8,11 @@ logger = get_logger('fuck')
 
 
 class Field(object):
+    def __init__(**kwargs):
+        pass
+
+
+class ValueField(Field):
     def __init__(self, default_value=None, required=False, **kwargs):
         self.default_value = default_value
         self.required = required
@@ -18,15 +23,14 @@ class Field(object):
     def set(self, value):
         self.default_value = value
 
+    def from_dict(self, value):
+        self.set(value)
+
     def to_dict(self):
         return self.get()
 
 
-class ValueField(Field):
-    pass
-
-
-class NameMappingField(Field):
+class NameMappingField(ValueField):
     def __init__(self, default_value, mapping=None, **kwargs):
         super().__init__(default_value, **kwargs)
         self.mapping = mapping
@@ -40,6 +44,58 @@ class NameMappingField(Field):
     def to_dict(self):
         return self.default_value
 
+    def from_dict(self, value):
+        self.set(value)
+
+
+class ListOfField(Field):
+    """
+        element_func returns an standard element.
+    """
+    def __init__(self, element_func: callable = None, **kwargs):
+        self.fields = []
+        self.element_func = element_func
+
+    # @pysnooper.snoop()
+    def append(self, value=None):
+        ele = self.element_func()
+        if value is not None:
+            ele.from_dict(value)
+        self.fields.append(ele)
+        return self
+
+    def __add__(self, other):
+        self.fields += other
+        return self
+
+    def from_dict(self, dd):
+        assert type(dd) is list
+        self.fields = []
+        for i in dd:
+            self.append(i)
+
+    def to_dict(self):
+        result = []
+        for i in self.fields:
+            result.append(i.to_dict())
+        return result
+
+    # @pysnooper.snoop()
+    def __getitem__(self, key):
+        assert type(key) == int
+        item = self.fields[key]
+        # print(item)
+        # print(hasattr(item, 'get'))
+        if hasattr(item, 'get'):
+            return item.get()
+        return item
+
+    def __len__(self):
+        return self.fields.__len__()
+
+    def get(self):
+        return self
+
 
 class Configure():
     def __init__(self, parent=None):
@@ -51,12 +107,24 @@ class Configure():
         else:
             self.root = self.parent.root
 
-    def add(self, name, default_value=None):
+    def add(self, name, default_value=None, **kwargs):
         if name not in self._cfg_storage:
-            self._cfg_storage[name] = ValueField(default_value)
+            self._cfg_storage[name] = ValueField(
+                default_value=default_value, **kwargs)
             return self
         else:
             raise Exception('name already exits!')
+
+    def add_multi(self, **values):
+        for k, v in values.items():
+            if type(v) is not dict:
+                v = dict(default_value=v)
+            self.add(k, **v)
+        return self
+
+    def add_list(self, name, ele_func, **kwargs):
+        self._cfg_storage[name] = ListOfField(element_func=ele_func, **kwargs)
+        return self
 
     def add_mapping(self, name, name_mapping, default_value=None, **kwargs):
         if name in self._cfg_storage:
@@ -90,6 +158,8 @@ class Configure():
                 return val
             else:
                 logger.error(f'got {type(val)}')
+        else:
+            raise AttributeError()
 
     def __setattr__(self, name, value):
         if name in self.__dict__:
@@ -119,12 +189,10 @@ class Configure():
         for k, v in cfg.items():
             if k not in self._cfg_storage:
                 raise Exception(f'configure {k} not found')
-            if isinstance(self._cfg_storage[k], Field):
+            if not hasattr(self._cfg_storage[k], 'from_dict'):
                 self.__setattr__(k, v)
-            elif isinstance(self._cfg_storage[k], Configure):
-                self._cfg_storage[k].from_dict(v)
             else:
-                raise Exception("FUCK YOU!!!")
+                self._cfg_storage[k].from_dict(v)
 
     def from_yaml(self, file):
         if type(file) is str:
@@ -136,3 +204,16 @@ class Configure():
         if type(file_to_write) is str:
             file_to_write = open(file_to_write, 'w')
         return yaml.safe_dump(self.to_dict(), file_to_write)
+
+    def make_sample_yaml(self, file=None):
+        for k, v in self._cfg_storage.items():
+            if isinstance(v, Configure):
+                v.make_sample_yaml()
+            elif isinstance(v, ListOfField) and len(v) == 0:
+                v.append({})
+        return self.to_yaml(file)
+
+    def _parent(self):
+        if self._parent is None:
+            raise Exception('Root node has no parent')
+        return self._parent
