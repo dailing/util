@@ -1,10 +1,10 @@
 import yaml
 from util.logs import get_logger
 from abc import ABC, abstractmethod
-import pysnooper
 from io import StringIO
 from collections.abc import Mapping
 from abc import ABC, abstractmethod
+import argparse
 
 try:
     import yaml
@@ -50,11 +50,22 @@ class Field(ABC):
 
 
 class ArgParseField(ABC):
-    pass
+    def __init__(self):
+        self.__dict__['__arg_parse_param_name'] = None
+
+    def _set_arg_parse_param_name(self, name):
+        self.__arg_parse_param_name = name
+
+    def _get_arg_parse_param_name(self):
+        return self.__arg_parse_param_name
+
+    def _get_arg_parse_kwargs(self):
+        return {}
 
 
-class ValueField(Field):
+class ValueField(Field, ArgParseField):
     def __init__(self, default=None):
+        super().__init__()
         self.value = default
         self.value_type = type(default)
 
@@ -76,6 +87,14 @@ class ValueField(Field):
 
     def _from_dict(self, value):
         self._set_value(value)
+
+
+class ArgParseAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        logger.info(f'{values}, {self.dest}')
+        if not hasattr(namespace, '_dict_storage'):
+            namespace._dict_storage = {}
+        namespace._dict_storage[self.dest] = values
 
 
 class ConfigField(Field):
@@ -122,6 +141,61 @@ class ConfigField(Field):
             retval[k] = v._to_dict()
         return retval
 
+    def _walk(self):
+        yield self
+        for k, v in self._cfg_storage.items():
+            if isinstance(v, ConfigField):
+                for xx in v._walk():
+                    yield xx
+            else:
+                yield v
+
+    def parse_args(self, args=None, namespace=None):
+        """
+        parse command line args, and update args in this config
+        """
+        parser = argparse.ArgumentParser()
+        args_map = {}
+        for field in self._walk():
+            if isinstance(field, ArgParseField):
+                name = field._get_arg_parse_param_name()
+                logger.info(name)
+                args_map[name] = field
+        args_alies = {k: [k] for k in args_map}
+        taken_args = set(args_alies)
+        for k in args_map:
+            sep_fields = k.split('.')
+            short_cut = sep_fields.pop()
+            while(short_cut in taken_args and len(sep_fields) > 0):
+                short_cut = f'{sep_fields.pop()}.{short_cut}'
+            if len(sep_fields) > 0:
+                taken_args.add(short_cut)
+                args_alies[k].append(short_cut)
+                if short_cut[0] not in taken_args:
+                    taken_args.add(short_cut[0])
+                    args_alies[k].append(short_cut[0])
+        for k, v in args_alies.items():
+            args_alies[k] = [
+                '-' * ((len(ii) > 1) + 1) + ii
+                for ii in v
+            ]
+        logger.info(args_alies)
+        for k, field in args_map.items():
+            argument_parameters = dict(
+                dest=k,
+                action=ArgParseAction
+            )
+            if hasattr(field, '_get_arg_parse_kwargs'):
+                argument_parameters.update(field._get_arg_parse_kwargs())
+            parser.add_argument(
+                *args_alies[k],
+                **argument_parameters,
+            )
+        args = parser.parse_args(args, namespace)
+        if hasattr(args, '_dict_storage'):
+            for k, v in args._dict_storage.items():
+                args_map[k]._set_value(v)
+
     def dump_yaml(self, **kwargs):
         if yaml is None:
             raise Exception(f'Please install pyyaml to use this function')
@@ -139,10 +213,11 @@ class Value(Node):
     _field = ValueField
 
 
-class ListValueField(ValueField):
+class ListValueField(ValueField, ArgParseField):
     """
         element_func returns an standard element.
     """
+
     def __init__(self, element=Value, **kwargs):
         self.fields = []
         self.element_func = element._field
@@ -185,30 +260,34 @@ class ListValueField(ValueField):
     def get(self):
         return self
 
+    def _get_arg_parse_kwargs(self):
+        return dict(nargs='*')
 
-class MappingValueField(ValueField):
+    def _set_value(self, value):
+        self._from_dict(value)
+
+
+class MappingValueField(ValueField, ArgParseField):
     def __init__(self, default=None, map_dict=None):
         self.value = default
         self.map_dict = map_dict
 
     def _get_bin_value(self):
-        return self
+        return self.map_dict[self.value]
 
-    def __getattr__(self, key):
-        if key not in self.map_dict:
-            raise AttributeError(
-                f'attribute {key} not exist, '
-                f'avaliable keys are '
-                f'{list(self.map_dict.keys())}')
-        return self.map_dict[key]
+    def _set_value(self, value):
+        assert type(value) is str
+        self.value = value
 
 
 class ValueList(Node):
     _field = ListValueField
+    _argparse_param = dict(nargs='*')
 
 
 class ValueMap(Node):
     _field = MappingValueField
+    _argparse_param = dict(nargs="*", action=None)
 
 
 def make_node(node_instance, attribute_dict, arg_prefix=''):
@@ -220,7 +299,9 @@ def make_node(node_instance, attribute_dict, arg_prefix=''):
             continue
         logger.info(f'new node {name}')
         new_node = ndef._field(*ndef.args, **ndef.kwargs)
-        make_node(new_node, ndef.__class__.__dict__, arg_prefix+name)
+        if isinstance(new_node, ArgParseField):
+            new_node._set_arg_parse_param_name(arg_prefix + name)
+        make_node(new_node, ndef.__class__.__dict__, arg_prefix + name)
         logger.info(f'setting node {name}, {type(new_node)}')
         setattr(node_instance, name, new_node)
     return node_instance

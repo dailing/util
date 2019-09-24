@@ -70,9 +70,10 @@ def test_list_value():
 
 def test_mapping_value():
     cfg = ConfigDef.build()
-    assert cfg.vmapping.mv1(10) == 100
-    assert cfg.vmapping.mv1(11) == 121
-    assert cfg.vmapping.mv2 == 1000
+    assert cfg.vmapping(10) == 100
+    assert cfg.vmapping(11) == 121
+    cfg.vmapping = 'mv2'
+    assert cfg.vmapping == 1000
 
 
 def test_to_yaml():
@@ -88,3 +89,27 @@ def test_type_convert():
     cfg = ConfigDef.build()
     cfg.v1 = '412123'
     assert cfg.v1 == 412123
+
+
+def test_parse_arg():
+    cfg = ConfigDef.build()
+    cfg.parse_args('--cfg.v1 1000 --v2 override_val'.split(), )
+    assert cfg.v1 == 1000
+    assert cfg.v2 == 'override_val'
+
+
+def test_parse_list():
+    cfg = ConfigDef.build()
+    values = [10, 30, 40, 'adf', '234']
+    cfg.parse_args(('--vlist '+' '.join(map(str, values))).split())
+    for i, j in zip(cfg.vlist, values):
+        assert str(i) == str(j)
+    assert len(cfg.vlist) == len(values)
+
+
+def test_parse_mapping():
+    cfg = ConfigDef.build()
+    cfg.parse_args('--vmapping mv2'.split())
+    assert cfg.vmapping == 1000
+    cfg.parse_args('--vmapping mv1'.split())
+    assert cfg.vmapping(11) == 121
