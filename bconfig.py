@@ -5,6 +5,7 @@ from io import StringIO
 from collections.abc import Mapping
 from abc import ABC, abstractmethod
 import argparse
+import json
 
 try:
     import yaml
@@ -13,23 +14,6 @@ except ModuleNotFoundError as e:
 
 
 logger = get_logger('config')
-
-
-class NodeMeta(type):
-    def __new__(cls, clsname, superclasses, attributedict, **kwargs):
-        logger.info(attributedict)
-        attributedict['build'] = lambda: make_root_node(
-            superclasses[0]._field, attributedict)
-        klass = type.__new__(cls, clsname, superclasses, attributedict)
-        logger.info(klass)
-        return klass
-
-
-class Node(object, metaclass=NodeMeta):
-    def __init__(self, *args, **kwargs):
-        logger.info('init node')
-        self.args = args
-        self.kwargs = kwargs
 
 
 class Field(ABC):
@@ -202,15 +186,7 @@ class ConfigField(Field):
         return yaml.safe_dump(self._to_dict(), **kwargs)
 
     def dump_json(self, **kwargs):
-        return json.dumps(self._to_dict())
-
-
-class Config(Node):
-    _field = ConfigField
-
-
-class Value(Node):
-    _field = ValueField
+        return json.dumps(self._to_dict(), **kwargs)
 
 
 class ListValueField(ValueField, ArgParseField):
@@ -218,8 +194,10 @@ class ListValueField(ValueField, ArgParseField):
         element_func returns an standard element.
     """
 
-    def __init__(self, element=Value, **kwargs):
+    def __init__(self, element=None, **kwargs):
         self.fields = []
+        if element is None:
+            element = Value('')
         self.element_func = element._field
 
     def append(self, value=None):
@@ -278,6 +256,32 @@ class MappingValueField(ValueField, ArgParseField):
     def _set_value(self, value):
         assert type(value) is str
         self.value = value
+
+
+class NodeMeta(type):
+    def __new__(cls, clsname, superclasses, attributedict, **kwargs):
+        logger.info(attributedict)
+        attributedict['build'] = lambda: make_root_node(
+            superclasses[0]._field, attributedict)
+        attributedict['_new_field'] = lambda parameter_list: expression
+        klass = type.__new__(cls, clsname, superclasses, attributedict)
+        logger.info(klass)
+        return klass
+
+
+class Node(object, metaclass=NodeMeta):
+    def __init__(self, *args, **kwargs):
+        logger.info('init node')
+        self.args = args
+        self.kwargs = kwargs
+
+
+class Config(Node):
+    _field = ConfigField
+
+
+class Value(Node):
+    _field = ValueField
 
 
 class ValueList(Node):

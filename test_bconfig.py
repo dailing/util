@@ -113,3 +113,7 @@ def test_parse_mapping():
     assert cfg.vmapping == 1000
     cfg.parse_args('--vmapping mv1'.split())
     assert cfg.vmapping(11) == 121
+
+
+if __name__ == "__main__":
+    cfg = ConfigDef.build()
