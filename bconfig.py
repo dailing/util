@@ -104,10 +104,11 @@ class ConfigField(Field):
 
     # ## setattr and getattr
     def __getattr__(self, name):
-        logger.info(f'get attr {name}')
         try:
             return self._cfg_storage[name]._get_bin_value()
         except KeyError:
+            logger.error(
+                f'{name} not an attribute: {list(self._cfg_storage.keys())}')
             raise AttributeError()
 
     def __setattr__(self, name, value):
@@ -124,6 +125,21 @@ class ConfigField(Field):
         for k, v in self._cfg_storage.items():
             retval[k] = v._to_dict()
         return retval
+
+    def _from_dict(self, values):
+        for k, v in values.items():
+            logger.info(f'{self._node_name}. setting key {k}, value : {v}')
+            if k not in self._cfg_storage:
+                raise Exception(
+                    f'key {k} not in the config defination!'
+                    f'{self} ')
+            self._cfg_storage[k]._from_dict(v)
+
+    def _from_yaml(self, file):
+        if type(file) is str:
+            file = open(file, 'r')
+        dd = yaml.safe_load(file)
+        self._from_dict(file)
 
     def _walk(self):
         yield self
@@ -185,6 +201,12 @@ class ConfigField(Field):
             raise Exception(f'Please install pyyaml to use this function')
         return yaml.safe_dump(self._to_dict(), **kwargs)
 
+    def from_yaml(self, file):
+        if type(file) is str:
+            file = open(file, 'r')
+        dd = yaml.safe_load(file)
+        self._from_dict(dd)
+
     def dump_json(self, **kwargs):
         return json.dumps(self._to_dict(), **kwargs)
 
@@ -197,12 +219,16 @@ class ListValueField(ValueField, ArgParseField):
     def __init__(self, element=None, **kwargs):
         self.fields = []
         if element is None:
+            logger.warning('element is None')
             element = Value('')
-        self.element_func = element._field
+        self.element_func = element
 
     def append(self, value=None):
-        ele = self.element_func()
-        logger.info(ele)
+        logger.info(self.element_func)
+        ele = self.element_func.build()
+        logger.info(self.element_func)
+        logger.info(list(ele.__class__.__dict__.keys()))
+        logger.info(value)
         if value is not None:
             ele._from_dict(value)
         self.fields.append(ele)
@@ -235,9 +261,6 @@ class ListValueField(ValueField, ArgParseField):
     def __len__(self):
         return self.fields.__len__()
 
-    def get(self):
-        return self
-
     def _get_arg_parse_kwargs(self):
         return dict(nargs='*')
 
@@ -246,9 +269,9 @@ class ListValueField(ValueField, ArgParseField):
 
 
 class MappingValueField(ValueField, ArgParseField):
-    def __init__(self, default=None, map_dict=None):
+    def __init__(self, default=None, **kwargs):
         self.value = default
-        self.map_dict = map_dict
+        self.map_dict = kwargs
 
     def _get_bin_value(self):
         return self.map_dict[self.value]
@@ -260,10 +283,17 @@ class MappingValueField(ValueField, ArgParseField):
 
 class NodeMeta(type):
     def __new__(cls, clsname, superclasses, attributedict, **kwargs):
-        logger.info(attributedict)
+        logger.info(f'{clsname}: {attributedict}')
+        logger.info(superclasses)
+        field_type = None
+        for i in superclasses[::-1]:
+            if hasattr(i, '_field'):
+                field_type = getattr(i, '_field')
+        if '_field' in attributedict:
+            field_type = attributedict['_field']
         attributedict['build'] = lambda: make_root_node(
-            superclasses[0]._field, attributedict)
-        attributedict['_new_field'] = lambda parameter_list: expression
+            field_type, attributedict)
+        # attributedict['_new_field'] = lambda parameter_list: expression
         klass = type.__new__(cls, clsname, superclasses, attributedict)
         logger.info(klass)
         return klass
@@ -295,6 +325,7 @@ class ValueMap(Node):
 
 
 def make_node(node_instance, attribute_dict, arg_prefix=''):
+    node_instance.__dict__['_node_name'] = arg_prefix
     if arg_prefix != '':
         arg_prefix += '.'
     logger.info('node')

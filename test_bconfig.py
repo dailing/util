@@ -4,24 +4,29 @@ import time
 from io import StringIO
 
 
-class ConfigNested2(Config):
-    v1 = Value(30)
-
-
-class ConfigNested1(Config):
-    v1 = Value(20)
-    nc2 = ConfigNested2()
-
-
 class ConfigDef(Config):
+    class ConfigNested1(Config):
+        class ConfigNested2(Config):
+            v1 = Value(30)
+        v1 = Value(20)
+        nc2 = ConfigNested2()
+
     v1 = Value(10)
     v2 = Value('v2_test_value1')
     nc1 = ConfigNested1()
     vlist = ValueList(Value)
-    vmapping = ValueMap('mv1', dict(
+    vlist_cfg = ValueList(ConfigNested1.ConfigNested2)
+    vmapping = ValueMap(
+        'mv1',
         mv1=lambda x: x * x,
         mv2=1000
-    ))
+    )
+
+
+def test_list_of_cfg():
+    cfg = ConfigDef.build()
+    cfg.vlist_cfg._from_dict([dict(v1=200)])
+    assert cfg.vlist_cfg[0].v1 == 200
 
 
 def test_get_value():
@@ -116,4 +121,4 @@ def test_parse_mapping():
 
 
 if __name__ == "__main__":
-    cfg = ConfigDef.build()
+    test_list_value()
