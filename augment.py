@@ -12,6 +12,7 @@ import inspect
 import pickle
 import os.path
 import zlib
+import torchvision
 
 logger = get_logger('augment.logger')
 
@@ -282,6 +283,16 @@ class RandomNoise(Transform):
         noise = np.random.normal(mean, var, image.shape)
         image += noise
         return image
+
+
+class Normalize(Transform):
+    def __init__(self, mean=None, std=None):
+        super().__init__()
+        self.mean = mean
+        self.std = std
+
+    def transform(self, image):
+        return ((image - self.mean) / self.std)
 
 
 class ToTensor(Transform):

@@ -59,6 +59,7 @@ class ListOfField(Field):
     # @pysnooper.snoop()
     def append(self, value=None):
         ele = self.element_func()
+        logger.info(ele)
         if value is not None:
             ele.from_dict(value)
         self.fields.append(ele)
