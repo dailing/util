@@ -16,6 +16,7 @@ class ConfigDef(Config):
     nc1 = ConfigNested1()
     vlist = ValueList(Value)
     vlist_cfg = ValueList(ConfigNested1.ConfigNested2)
+    vdict = Value({})
     vmapping = ValueMap(
         'mv1',
         mv1=lambda x: x * x,
@@ -119,6 +120,16 @@ def test_parse_mapping():
     cfg.parse_args('--vmapping mv1'.split())
     assert cfg.vmapping(11) == 121
 
+
+def test_set_dict_in_value():
+    cfg = ConfigDef.build()
+    cfg.parse_args('--cfg.vdict.fuck 1'.split())
+    cfg.parse_args('--cfg.vdict.fuck2 1.23'.split())
+    cfg.parse_args('--cfg.vdict.fuckstr 11231bsf'.split())
+    logger.info(cfg.vdict)
+    assert cfg.vdict['fuck'] == 1
+    assert cfg.vdict['fuck2'] == 1.23
+    assert cfg.vdict['fuckstr'] == '11231bsf'
 
 if __name__ == "__main__":
     test_list_value()

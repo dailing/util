@@ -300,6 +300,8 @@ class ToTensor(Transform):
         super().__init__()
 
     def transform(self, img):
+        if len(img.shape) == 2:
+            img = img[:, :, np.newaxis]
         logger.debug(f'type is: {type(img)}, {img}')
         assert np.issubdtype(img.dtype, np.floating)
         # logger.info(img.shape)
@@ -390,16 +392,16 @@ class RangeCenter(Transform):
         return image
 
 
-# class LocalNorm(Transform):
-# 	"""docstring for PerImageNorm"""
-#
-# 	def __init__(self):
-# 		super(LocalNorm, self).__init__()
-#
-# 	def transform(self, image):
-# 		filtered_image = gaussian(image, multichannel=True, sigma=5)
-# 		normed = filtered_image - image
-# 		return normed
+class LocalNorm(Transform):
+    """docstring for PerImageNorm"""
+
+    def __init__(self):
+        super(LocalNorm, self).__init__()
+
+    def transform(self, image):
+        filtered_image = gaussian(image, multichannel=True, sigma=5)
+        normed = filtered_image - image
+        return normed
 
 
 class Compose(Transform):
@@ -611,3 +613,35 @@ class RandFlip(Transform):
             for i in range(len(flip)):
                 flip[i] = (flip[i][::-1, :]).copy()
         return flip
+
+
+augment_map = dict(
+    CompostImageAndLabel=CompostImageAndLabel,
+    ImageReader=ImageReader,
+    ImageSaver=ImageSaver,
+    Identity=Identity,
+    RandomCrop=RandomCrop,
+    ResizeKeepAspectRatio=ResizeKeepAspectRatio,
+    Resize=Resize,
+    RangeLimit=RangeLimit,
+    RandomNoise=RandomNoise,
+    Normalize=Normalize,
+    ToTensor=ToTensor,
+    ToFloat=ToFloat,
+    ToInt=ToInt,
+    ToNumpyType=ToNumpyType,
+    GlobalNorm=GlobalNorm,
+    PerImageNorm=PerImageNorm,
+    RangeCenter=RangeCenter,
+    LocalNorm=LocalNorm,
+    Compose=Compose,
+    FundusAOICrop=FundusAOICrop,
+    FixedCrop=FixedCrop,
+    SingleChannel=SingleChannel,
+    RandRotate=RandRotate,
+    OneOf=OneOf,
+    GausianBlur=GausianBlur,
+    AverageBlur=AverageBlur,
+    MedianBlur=MedianBlur,
+    RandFlip=RandFlip,
+)

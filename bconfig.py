@@ -50,8 +50,8 @@ class ArgParseField(ABC):
 class ValueField(Field, ArgParseField):
     def __init__(self, default=None):
         super().__init__()
-        self.value = default
-        self.value_type = type(default)
+        self.__dict__['value'] = default
+        self.__dict__['value_type'] = type(default)
 
     def _get_readable_value(self):
         return self.value
@@ -71,6 +71,13 @@ class ValueField(Field, ArgParseField):
 
     def _from_dict(self, value):
         self._set_value(value)
+
+    # def __getattr__(self, name):
+    #     assert isinstance(self.value, dict)
+
+    # def __setattr__(self, name, value):
+    #     assert isinstance(self.value, dict)
+    #     self.value[name] = value
 
 
 class ArgParseAction(argparse.Action):
@@ -191,10 +198,32 @@ class ConfigField(Field):
                 *args_alies[k],
                 **argument_parameters,
             )
-        args = parser.parse_args(args, namespace)
+        args, rest_args = parser.parse_known_args(args, namespace)
         if hasattr(args, '_dict_storage'):
             for k, v in args._dict_storage.items():
                 args_map[k]._set_value(v)
+        while len(rest_args) > 0:
+            key, v = rest_args[:2]
+            rest_args = rest_args[2:]
+            if not key.startswith('--'):
+                continue
+            key = key[2:].split('.')
+            if not(key[0] == 'cfg'):
+                continue
+            mapping_key = key[-1]
+            key = '.'.join(key[:-1])
+            if key not in args_map:
+                continue
+            vv = args_map[key]
+            try:
+                v = int(v)
+            except ValueError:
+                try:
+                    v = float(v)
+                except ValueError:
+                    pass
+                pass
+            vv.value[mapping_key] = v
 
     def dump_yaml(self, **kwargs):
         if yaml is None:
@@ -277,7 +306,7 @@ class MappingValueField(ValueField, ArgParseField):
         return self.map_dict[self.value]
 
     def _set_value(self, value):
-        assert type(value) is str
+        assert type(value) is str, value
         self.value = value
 
 
