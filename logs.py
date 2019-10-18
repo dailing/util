@@ -6,7 +6,7 @@ import os.path
 
 def get_logger(name: str, print_level=logging.DEBUG):
     formatter = logging.Formatter(
-        fmt="%(levelname)6s [%(pathname)60s:%(lineno)-3d %(asctime)s] %(message)s",
+        fmt="%(levelname)6s [%(filename)15s:%(lineno)-3d %(asctime)s] %(message)s",
         datefmt='%H:%M:%S',
     )
     time_now = datetime.datetime.now().strftime("%Y_%m_%d.%H_%M_%S")
