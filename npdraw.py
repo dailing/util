@@ -29,22 +29,22 @@ def _tonumpy(surface: cairo.ImageSurface):
 
 
 def draw_bounding_box(image: np.ndarray, crow, ccol, rowrange,
-                      colrange, color=None, bg_color=None):
+                      colrange, color=None, bg_color=None, line_width=5):
     H, W, C = image.shape
     surface = _fromnumpy(image)
     ctx = cairo.Context(surface)
     ctx.scale(W, H)
 
     ctx.rectangle(
-        (ccol - colrange / 2) / W,
-        (crow - rowrange / 2) / H,
-        colrange / W,
-        rowrange / H,
+        (ccol - colrange / 2) / 1,
+        (crow - rowrange / 2) / 1,
+        colrange / 1,
+        rowrange / 1,
     )  # Rectangle(x0, y0, x1, y1)
     if color is None:
         color = (0, 1, 0, 1)
     ctx.set_source_rgba(*color)
-    ctx.set_line_width(1 / H)
+    ctx.set_line_width(line_width / H)
     ctx.set_dash([5 / H])
     ctx.stroke_preserve()
     if bg_color is not None:
