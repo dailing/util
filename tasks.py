@@ -13,7 +13,8 @@ import base64
 from os.path import exists
 import pickle
 import sys
-import lzma
+# import lzma
+import io
 
 
 # adding some optional dependency
@@ -68,6 +69,10 @@ class Request(object):
     def get(self):
         return self.payload
 
+    def get_pickle(self):
+        # return pickle.loads(lzma.decompress(self.get()))
+        return pickle.loads(self.get())
+
 
 class ResponseWriter(object):
     """docstring for ResultWriter."""
@@ -78,11 +83,15 @@ class ResponseWriter(object):
         self.redisConn = redisConn
 
     def write_raw(self, payload):
+        # self.redisConn.lpush(self.slot, lzma.compress(payload))
         self.redisConn.lpush(self.slot, payload)
 
     def write_json(self, obj):
         payload = json.dumps(obj)
         self.write_raw(payload)
+
+    def write_pickle(self, obj):
+        self.write_raw(pickle.dumps(obj))
 
 
 class Response(object):
@@ -105,13 +114,14 @@ class Response(object):
             assert name == self.slot
             logger.debug('getting key from + ' + name)
             self.raw = payload
-            self.raw = lzma.decompress(self.raw)
+            # self.raw = lzma.decompress(self.raw)
+            self.raw = self.raw
         return self.raw
 
-    # def get_json(self):
-    #     obj = None
-    #     obj = json.loads(self.get_raw().decode('utf-8'))
-    #     return obj
+    def get_json(self):
+        obj = None
+        obj = json.loads(self.get_raw().decode('utf-8'))
+        return obj
 
     def get(self):
         return pickle.loads(self.get_raw())
@@ -142,7 +152,7 @@ class Task(object):
             Issue a task
         '''
         input = pickle.dumps(input)
-        input = lzma.compress(input)
+        # input = lzma.compress(input)
         pipe = self.redisConn.pipeline(transaction=True)
         result_slot = self.task_name + '.output_slot.' + randstr(20)
         pipe.lpush(self.payload_channel, input)
@@ -254,7 +264,8 @@ class MService:
                 # write to the task slot anyway.
                 if resp_writer is not None:
                     try:
-                        resp_writer.write_raw(lzma.compress(pickle.dumps(result)))
+                        # resp_writer.write_raw(lzma.compress(pickle.dumps(result)))
+                        resp_writer.write_raw(pickle.dumps(result))
                     except Exception as e:
                         logger.error(e, exec_info=True)
 
