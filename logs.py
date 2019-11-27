@@ -14,9 +14,9 @@ def get_logger(name: str, print_level=logging.DEBUG):
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setFormatter(formatter)
     stream_handler.setLevel(logging.INFO)
-    if not os.path.exists(f'log/{time_now}/'):
-        os.makedirs(f'log/{time_now}/', exist_ok=True)
-    file_handler = logging.FileHandler(f'log/{time_now}/{name}.log')
+    if not os.path.exists(f'/tmp//tmp/log/{time_now}/'):
+        os.makedirs(f'/tmp/log/{time_now}/', exist_ok=True)
+    file_handler = logging.FileHandler(f'/tmp/log/{time_now}/{name}.log')
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.DEBUG)
     logger.addHandler(stream_handler)
