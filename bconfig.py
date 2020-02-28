@@ -82,7 +82,7 @@ class ValueField(Field, ArgParseField):
 
 class ArgParseAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        logger.info(f'{values}, {self.dest}')
+        logger.debug(f'{values}, {self.dest}')
         if not hasattr(namespace, '_dict_storage'):
             namespace._dict_storage = {}
         namespace._dict_storage[self.dest] = values
@@ -93,7 +93,7 @@ class ConfigField(Field):
             self, parent=None, name=None, **kwargs):
         # self.parent = parent
         # self.name = name
-        logger.info('init')
+        logger.debug('init')
         self.__dict__['_cfg_storage'] = {}
 
     # ## Field methods
@@ -135,7 +135,7 @@ class ConfigField(Field):
 
     def _from_dict(self, values):
         for k, v in values.items():
-            logger.info(f'{self._node_name}. setting key {k}, value : {v}')
+            logger.debug(f'{self._node_name}. setting key {k}, value : {v}')
             if k not in self._cfg_storage:
                 raise Exception(
                     f'key {k} not in the config defination!'
@@ -166,7 +166,7 @@ class ConfigField(Field):
         for field in self._walk():
             if isinstance(field, ArgParseField):
                 name = field._get_arg_parse_param_name()
-                logger.info(name)
+                logger.debug(name)
                 args_map[name] = field
         args_alies = {k: [k] for k in args_map}
         taken_args = set(args_alies)
@@ -186,7 +186,7 @@ class ConfigField(Field):
                 '-' * ((len(ii) > 1) + 1) + ii
                 for ii in v
             ]
-        logger.info(args_alies)
+        logger.debug(args_alies)
         for k, field in args_map.items():
             argument_parameters = dict(
                 dest=k,
@@ -253,11 +253,11 @@ class ListValueField(ValueField, ArgParseField):
         self.element_func = element
 
     def append(self, value=None):
-        logger.info(self.element_func)
+        logger.debug(self.element_func)
         ele = self.element_func.build()
-        logger.info(self.element_func)
-        logger.info(list(ele.__class__.__dict__.keys()))
-        logger.info(value)
+        logger.debug(self.element_func)
+        logger.debug(list(ele.__class__.__dict__.keys()))
+        logger.debug(value)
         if value is not None:
             ele._from_dict(value)
         self.fields.append(ele)
@@ -312,8 +312,8 @@ class MappingValueField(ValueField, ArgParseField):
 
 class NodeMeta(type):
     def __new__(cls, clsname, superclasses, attributedict, **kwargs):
-        logger.info(f'{clsname}: {attributedict}')
-        logger.info(superclasses)
+        logger.debug(f'{clsname}: {attributedict}')
+        logger.debug(superclasses)
         field_type = None
         for i in superclasses[::-1]:
             if hasattr(i, '_field'):
@@ -324,13 +324,13 @@ class NodeMeta(type):
             field_type, attributedict)
         # attributedict['_new_field'] = lambda parameter_list: expression
         klass = type.__new__(cls, clsname, superclasses, attributedict)
-        logger.info(klass)
+        logger.debug(klass)
         return klass
 
 
 class Node(object, metaclass=NodeMeta):
     def __init__(self, *args, **kwargs):
-        logger.info('init node')
+        logger.debug('init node')
         self.args = args
         self.kwargs = kwargs
 
@@ -357,16 +357,16 @@ def make_node(node_instance, attribute_dict, arg_prefix=''):
     node_instance.__dict__['_node_name'] = arg_prefix
     if arg_prefix != '':
         arg_prefix += '.'
-    logger.info('node')
+    logger.debug('node')
     for name, ndef in attribute_dict.items():
         if not isinstance(ndef, Node):
             continue
-        logger.info(f'new node {name}')
+        logger.debug(f'new node {name}')
         new_node = ndef._field(*ndef.args, **ndef.kwargs)
         if isinstance(new_node, ArgParseField):
             new_node._set_arg_parse_param_name(arg_prefix + name)
         make_node(new_node, ndef.__class__.__dict__, arg_prefix + name)
-        logger.info(f'setting node {name}, {type(new_node)}')
+        logger.debug(f'setting node {name}, {type(new_node)}')
         setattr(node_instance, name, new_node)
     return node_instance
 

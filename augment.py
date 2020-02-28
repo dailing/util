@@ -12,7 +12,7 @@ import inspect
 import pickle
 import os.path
 import zlib
-import torchvision
+# import torchvision
 
 logger = get_logger('augment.logger')
 
@@ -33,7 +33,7 @@ class Transform(ABC):
         :param sample_id: optional id of input image, useful in caching
         :return:the transformed image
         """
-        logger.debug(f'calling:{self.__class__.__name__}_{self.id}')
+        # logger.debug(f'calling:{self.__class__.__name__}_{self.id}')
         if len(img) == 0 or img[0] is None:
             return None
         try:
@@ -48,7 +48,7 @@ class Transform(ABC):
             raise e
             return None
         if type(output_image) in (list, tuple) and len(output_image) == 1:
-            logger.debug('single output')
+            # logger.debug('single output')
             return output_image[0]
         # logger.debug(output_image.shape)
         return output_image
@@ -134,17 +134,17 @@ class ImageSaver(Transform):
         if img is None:
             logger.error('No image')
             return None
-        if type(img) not in (tuple, list) or len(img) != 2:
-            logger.error('input type not correct')
-            return None
-        name, img = img
+        # if type(img) not in (tuple, list) or len(img) != 2:
+        #     logger.error('input type not correct')
+        #     return None
+        # name, img = img
         if img is None:
             return None
         try:
-            result = cv2.imencode('.png', img)
-            if result is not None and result[0]:
-                with open(name, 'wb') as f:
-                    f.write(result[1].tobytes())
+            succ, result = cv2.imencode('.png', img)
+            if not succ:
+                return None
+            return result.tobytes()
         except Exception as e:
             traceback.print_exc()
             return None
@@ -302,7 +302,7 @@ class ToTensor(Transform):
     def transform(self, img):
         if len(img.shape) == 2:
             img = img[:, :, np.newaxis]
-        logger.debug(f'type is: {type(img)}, {img}')
+        # logger.debug(f'type is: {type(img)}, {img}')
         assert np.issubdtype(img.dtype, np.floating)
         # logger.info(img.shape)
         return img.transpose((2, 0, 1))
@@ -477,7 +477,7 @@ class FundusAOICrop(Transform):
         for i in range(len(restImage)):
             restImage[i] = restImage[i][rmin:rmax, cmin:cmax]
         if len(restImage) == 0:
-            logger.debug('single image')
+            # logger.debug('single image')
             return img
         return (img, *restImage)
 
